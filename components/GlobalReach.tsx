@@ -352,7 +352,6 @@ export const GlobalReach: React.FC = () => {
     );
 
     polygonSeries.mapPolygons.template.setAll({
-      tooltipText: '{name}',
       toggleKey: 'active',
       interactive: true,
       fill: am5.color(0x5078c0),
@@ -383,34 +382,39 @@ export const GlobalReach: React.FC = () => {
 
       const container = am5.Container.new(bulletRoot, { cursorOverStyle: 'pointer' });
 
-      // Outer Pulse Ring Bullet with custom canvas soft-glow filter properties
-      container.children.push(
-        am5.Circle.new(bulletRoot, {
-          radius: isHq ? 14 : 9,
-          fill: am5.color(isHq ? 0x2563eb : 0x38bdf8),
-          fillOpacity: 0.35,
-          strokeOpacity: 0,
-          shadowColor: am5.color(isHq ? 0x2563eb : 0x38bdf8),
-          shadowBlur: 14,
-          shadowOffsetX: 0,
-          shadowOffsetY: 0
-        })
-      );
+      // HTML Marker with CSS keyframes pulsing
+      const markerLabel = am5.Label.new(bulletRoot, {
+        html: `
+          <div class="globe-marker-container" style="width: ${isHq ? 28 : 18}px; height: ${isHq ? 28 : 18}px;">
+            <div class="globe-marker-pulse ${isHq ? 'hq' : ''}"></div>
+            <div class="globe-marker-core ${isHq ? 'hq' : ''}"></div>
+          </div>
+        `,
+        centerX: am5.p50,
+        centerY: am5.p50
+      });
+      container.children.push(markerLabel);
 
-      // Inner Core Bullet Node with custom canvas soft-glow filter properties
-      container.children.push(
-        am5.Circle.new(bulletRoot, {
-          radius: isHq ? 7 : 4.5,
-          fill: am5.color(isHq ? 0x2563eb : 0x3b82f6),
-          stroke: am5.color(0xffffff),
-          strokeWidth: 1.5,
-          tooltipText: `[bold]${data?.city ?? ''} (${data?.country ?? ''})[/]\n${data?.clientName ?? ''}`,
-          shadowColor: am5.color(0x3b82f6),
-          shadowBlur: 8,
-          shadowOffsetX: 0,
-          shadowOffsetY: 0
-        })
-      );
+      // Sectioned Tooltip Card (Appears when in front, auto-hides when behind)
+      const cardLabel = am5.Label.new(bulletRoot, {
+        html: `
+          <div class="globe-tooltip-card pointer-events-none bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-xl flex flex-col gap-1 min-w-[160px]" data-lon="${data?.longitude ?? 0}">
+            <div class="text-[9px] font-mono font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
+              ${data?.city ?? ''} (${data?.country ?? ''})
+            </div>
+            <div class="text-xs font-bold text-slate-900 dark:text-white leading-tight">
+              ${data?.clientName ?? ''}
+            </div>
+            <div class="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+              ${data?.projectType ?? ''}
+            </div>
+          </div>
+        `,
+        centerX: am5.p50,
+        centerY: am5.p100,
+        dy: -12, // Offset above the point
+      });
+      container.children.push(cardLabel);
 
       container.events.on('click', () => { if (data) pinClickRef.current(data); });
       container.events.on('pointerover', () => { if (data) pinHoverRef.current(data); });
@@ -419,21 +423,37 @@ export const GlobalReach: React.FC = () => {
       return am5.Bullet.new(bulletRoot, { sprite: container });
     });
 
+    const savedRotX = parseFloat(localStorage.getItem('globe_rotationX') || '0');
+    chart.set('rotationX', savedRotX);
+
     // Auto-Rotation Animation Loop (30 seconds per 360° turn)
     const spin = chart.animate({
       key: 'rotationX',
-      from: 0,
-      to: 360,
+      from: savedRotX,
+      to: savedRotX + 360,
       duration: 30000,
       loops: Infinity,
       easing: am5.ease.linear
     });
     spinRef.current = spin;
 
-    // Track Rotation Angle for Slider Synchronization
+    // Track Rotation Angle for Slider Synchronization and JS Visibility Observer
     chart.events.on('boundschanged', () => {
       const rot = chart.get('rotationX', 0);
       setRotationX(Math.round(((rot % 360) + 360) % 360 - 180));
+      localStorage.setItem('globe_rotationX', rot.toString());
+
+      // JS Observer: toggle visibility of tooltip cards based on rotation state
+      const tooltips = document.querySelectorAll('.globe-tooltip-card');
+      tooltips.forEach((tooltip) => {
+        const lon = parseFloat(tooltip.getAttribute('data-lon') || '0');
+        const isFront = Math.cos((lon + rot) * Math.PI / 180) > 0;
+        if (isFront) {
+          tooltip.classList.add('visible');
+        } else {
+          tooltip.classList.remove('visible');
+        }
+      });
     });
 
     // Pause spin rotation on map interaction

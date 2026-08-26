@@ -77,12 +77,12 @@ export const MiniGlobe: React.FC = () => {
 
     // City Coordinates
     const cities = [
-      { id: 'dhaka', title: 'Dhaka HQ', latitude: 23.8103, longitude: 90.4125, isHq: true },
-      { id: 'london', title: 'London Node', latitude: 51.5074, longitude: -0.1278 },
-      { id: 'nyc', title: 'NYC Node', latitude: 40.7128, longitude: -74.0060 },
-      { id: 'tokyo', title: 'Tokyo Node', latitude: 35.6762, longitude: 139.6503 },
-      { id: 'singapore', title: 'Singapore Node', latitude: 1.3521, longitude: 103.8198 },
-      { id: 'frankfurt', title: 'Frankfurt Node', latitude: 50.1109, longitude: 8.6821 }
+      { id: 'dhaka', title: 'Dhaka HQ', latitude: 23.8103, longitude: 90.4125, isHq: true, clientName: 'OITS Dhaka HQ', projectType: 'Engineering Command Hub' },
+      { id: 'london', title: 'London Node', latitude: 51.5074, longitude: -0.1278, clientName: 'SecurePay International', projectType: 'Payment Gateway Core' },
+      { id: 'nyc', title: 'NYC Node', latitude: 40.7128, longitude: -74.0060, clientName: 'Apex Capital Analytics', projectType: 'FinTech Analytics Engine' },
+      { id: 'tokyo', title: 'Tokyo Node', latitude: 35.6762, longitude: 139.6503, clientName: 'Nippon Freight Systems', projectType: 'Logistics AI Platform' },
+      { id: 'singapore', title: 'Singapore Node', latitude: 1.3521, longitude: 103.8198, clientName: 'TradeNet SE Asia', projectType: 'Blockchain Supply Ledger' },
+      { id: 'frankfurt', title: 'Frankfurt Node', latitude: 50.1109, longitude: 8.6821, clientName: 'EuroBank Identity', projectType: 'Zero-Trust Auth System' }
     ];
 
     // Bullet Template matching GlobalReach node markers
@@ -92,47 +92,39 @@ export const MiniGlobe: React.FC = () => {
 
       const container = am5.Container.new(root, {});
 
-      // Outer Pulsing Circle
-      const circle2 = container.children.push(
-        am5.Circle.new(root, {
-          radius: isHq ? 10 : 7,
-          fill: am5.color(isHq ? 0x2563eb : 0x38bdf8),
-          fillOpacity: 0.35,
-          shadowColor: am5.color(isHq ? 0x2563eb : 0x38bdf8),
-          shadowBlur: 10
-        })
-      );
-
-      circle2.animate({
-        key: "scale",
-        from: 1,
-        to: 2.2,
-        duration: 1500,
-        loops: Infinity,
-        easing: am5.ease.out(am5.ease.cubic)
+      // HTML Marker with CSS keyframes pulsing
+      const markerLabel = am5.Label.new(root, {
+        html: `
+          <div class="globe-marker-container" style="width: ${isHq ? 20 : 14}px; height: ${isHq ? 20 : 14}px;">
+            <div class="globe-marker-pulse ${isHq ? 'hq' : ''}"></div>
+            <div class="globe-marker-core ${isHq ? 'hq' : ''}" style="width: ${isHq ? 11 : 7}px; height: ${isHq ? 11 : 7}px;"></div>
+          </div>
+        `,
+        centerX: am5.p50,
+        centerY: am5.p50
       });
+      container.children.push(markerLabel);
 
-      circle2.animate({
-        key: "fillOpacity",
-        from: 0.5,
-        to: 0,
-        duration: 1500,
-        loops: Infinity,
-        easing: am5.ease.out(am5.ease.cubic)
+      // Sectioned Tooltip Card
+      const cardLabel = am5.Label.new(root, {
+        html: `
+          <div class="globe-tooltip-card pointer-events-none bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-1.5 sm:p-2 rounded-lg shadow-xl flex flex-col gap-0.5 min-w-[120px]" data-lon="${data?.longitude ?? 0}">
+            <div class="text-[8px] font-mono font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
+              ${data?.title}
+            </div>
+            <div class="text-[10px] font-bold text-slate-900 dark:text-white leading-tight">
+              ${data?.clientName}
+            </div>
+            <div class="text-[8px] text-slate-500 dark:text-slate-400 leading-tight truncate">
+              ${data?.projectType}
+            </div>
+          </div>
+        `,
+        centerX: am5.p50,
+        centerY: am5.p100,
+        dy: -8, // Offset above the point
       });
-
-      // Core Solid Point
-      container.children.push(
-        am5.Circle.new(root, {
-          radius: isHq ? 5.5 : 3.5,
-          fill: am5.color(isHq ? 0x2563eb : 0x3b82f6),
-          stroke: am5.color(0xffffff),
-          strokeWidth: 1.5,
-          tooltipText: "{title}",
-          shadowColor: am5.color(0x3b82f6),
-          shadowBlur: 6
-        })
-      );
+      container.children.push(cardLabel);
 
       return am5.Bullet.new(root, {
         sprite: container
@@ -174,13 +166,34 @@ export const MiniGlobe: React.FC = () => {
     lineSeries.data.setAll(lineData);
 
     // Continuous Smooth 3D Globe Rotation
+    const savedRotX = parseFloat(localStorage.getItem('globe_rotationX') || '0');
+    chart.set('rotationX', savedRotX);
+
     const spinAnimation = chart.animate({
       key: "rotationX",
-      from: 0,
-      to: 360,
+      from: savedRotX,
+      to: savedRotX + 360,
       duration: 30000,
       loops: Infinity,
       easing: am5.ease.linear
+    });
+
+    // Track Rotation Angle for Slider Synchronization and JS Visibility Observer
+    chart.events.on('boundschanged', () => {
+      const rot = chart.get('rotationX', 0);
+      localStorage.setItem('globe_rotationX', rot.toString());
+
+      // JS Observer: toggle visibility of tooltip cards based on rotation state
+      const tooltips = document.querySelectorAll('.globe-tooltip-card');
+      tooltips.forEach((tooltip) => {
+        const lon = parseFloat(tooltip.getAttribute('data-lon') || '0');
+        const isFront = Math.cos((lon + rot) * Math.PI / 180) > 0;
+        if (isFront) {
+          tooltip.classList.add('visible');
+        } else {
+          tooltip.classList.remove('visible');
+        }
+      });
     });
 
     // On user drag, pause auto-rotation briefly
