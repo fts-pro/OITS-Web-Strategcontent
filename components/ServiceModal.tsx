@@ -138,6 +138,18 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({ service, isOpen, onC
                       </div>
                     </div>
                   </section>
+                  
+                  <div className="mt-12 pt-8 border-t border-slate-100 dark:border-slate-800">
+                    <button 
+                      onClick={() => {
+                        onClose();
+                        document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="w-full md:w-auto px-8 py-4 bg-slate-950 dark:bg-white text-white dark:text-slate-950 text-xs font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-all shadow-xl shadow-slate-900/20"
+                    >
+                      Learn More & Get a Quote
+                    </button>
+                  </div>
                 </div>
               </div>
             </motion.div>

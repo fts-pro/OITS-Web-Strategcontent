@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Mail, User, MessageSquare, Send, CheckCircle2, AlertCircle, X } from 'lucide-react';
+import { Mail, User, MessageSquare, Send, CheckCircle2, AlertCircle, X, Phone, ChevronDown, CheckCircle } from 'lucide-react';
 import { useLanguage } from './LanguageContext';
 
 interface ContactFormProps {
@@ -13,35 +13,51 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onClose, isModal = fal
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
+    inquiryType: 'Project Inquiry',
     message: ''
   });
 
-  const [errors, setErrors] = useState<{ name?: string; email?: string; message?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; email?: string; phone?: string; message?: string }>({});
+  const [touched, setTouched] = useState<{ name?: boolean; email?: boolean; phone?: boolean; message?: boolean }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
+  const validateField = (field: string, value: string): string | undefined => {
+    if (field === 'name') {
+      if (!value.trim()) return language === 'bn' ? 'আপনার নাম দেয়া আবশ্যক' : 'Full name is required';
+      if (value.trim().length < 2) return language === 'bn' ? 'নাম কমপক্ষে ২ অক্ষরের হতে হবে' : 'Name must be at least 2 characters';
+    }
+    if (field === 'email') {
+      if (!value.trim()) return language === 'bn' ? 'ইমেল নম্বর দেয়া আবশ্যক' : 'Email address is required';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) return language === 'bn' ? 'সঠিক ইমেল প্রদান করুন' : 'Please enter a valid email address';
+    }
+    if (field === 'phone') {
+      if (!value.trim()) return language === 'bn' ? 'ফোন নম্বর দেয়া আবশ্যক' : 'Phone number is required';
+    }
+    if (field === 'message') {
+      if (!value.trim()) return language === 'bn' ? 'বার্তা প্রদান আবশ্যক' : 'Message content is required';
+      if (value.trim().length < 10) return language === 'bn' ? 'বার্তা কমপক্ষে ১০ অক্ষরের হতে হবে' : 'Message must be at least 10 characters';
+    }
+    return undefined;
+  };
+
   const validate = () => {
-    const newErrors: { name?: string; email?: string; message?: string } = {};
+    const newErrors: { name?: string; email?: string; phone?: string; message?: string } = {};
+    const nameErr = validateField('name', formData.name);
+    if (nameErr) newErrors.name = nameErr;
+    
+    const emailErr = validateField('email', formData.email);
+    if (emailErr) newErrors.email = emailErr;
 
-    if (!formData.name.trim()) {
-      newErrors.name = language === 'bn' ? 'আপনার নাম দেয়া আবশ্যক' : 'Full name is required';
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = language === 'bn' ? 'নাম কমপক্ষে ২ অক্ষরের হতে হবে' : 'Name must be at least 2 characters';
-    }
+    const phoneErr = validateField('phone', formData.phone);
+    if (phoneErr) newErrors.phone = phoneErr;
 
-    if (!formData.email.trim()) {
-      newErrors.email = language === 'bn' ? 'ইমেল নম্বর দেয়া আবশ্যক' : 'Email address is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
-      newErrors.email = language === 'bn' ? 'সঠিক ইমেল প্রদান করুন' : 'Please enter a valid email address';
-    }
-
-    if (!formData.message.trim()) {
-      newErrors.message = language === 'bn' ? 'বার্তা প্রদান আবশ্যক' : 'Message content is required';
-    } else if (formData.message.trim().length < 10) {
-      newErrors.message = language === 'bn' ? 'বার্তা কমপক্ষে ১০ অক্ষরের হতে হবে' : 'Message must be at least 10 characters';
-    }
+    const msgErr = validateField('message', formData.message);
+    if (msgErr) newErrors.message = msgErr;
 
     setErrors(newErrors);
+    setTouched({ name: true, email: true, phone: true, message: true });
     return Object.keys(newErrors).length === 0;
   };
 
@@ -55,16 +71,45 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onClose, isModal = fal
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSubmitted(true);
-      setFormData({ name: '', email: '', message: '' });
+      setFormData({ name: '', email: '', phone: '', inquiryType: 'Project Inquiry', message: '' });
       setErrors({});
+      setTouched({});
     }, 1200);
   };
 
-  const handleChange = (field: 'name' | 'email' | 'message', value: string) => {
+  const handleChange = (field: 'name' | 'email' | 'phone' | 'inquiryType' | 'message', value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: undefined }));
+    if (touched[field as keyof typeof touched]) {
+      const error = validateField(field, value);
+      setErrors(prev => ({ ...prev, [field]: error }));
     }
+  };
+
+  const handleBlur = (field: 'name' | 'email' | 'phone' | 'message') => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    const error = validateField(field, formData[field]);
+    setErrors(prev => ({ ...prev, [field]: error }));
+  };
+
+  const getFieldBorderClass = (field: 'name' | 'email' | 'phone' | 'message') => {
+    if (errors[field]) {
+      return 'border-red-500 focus:border-red-500 text-red-900 dark:text-red-400 bg-red-50/50 dark:bg-red-950/20';
+    }
+    if (touched[field] && !errors[field] && formData[field]) {
+      return 'border-emerald-500 focus:border-emerald-500 text-emerald-900 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/20';
+    }
+    return 'border-slate-200 dark:border-slate-800 focus:border-blue-600 dark:focus:border-blue-500';
+  };
+
+  const getIconColorClass = (field: 'name' | 'email' | 'phone' | 'message') => {
+    if (errors[field]) return 'text-red-400';
+    if (touched[field] && !errors[field] && formData[field]) return 'text-emerald-500';
+    return 'text-slate-400';
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 15 },
+    visible: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
   };
 
   return (
@@ -123,15 +168,25 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onClose, isModal = fal
             </button>
           </motion.div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-6" noValidate aria-label="Contact Engineering Form">
+          <motion.form 
+            initial="hidden"
+            animate="visible"
+            variants={{
+              visible: { transition: { staggerChildren: 0.05 } }
+            }}
+            onSubmit={handleSubmit} 
+            className="space-y-6" 
+            noValidate 
+            aria-label="Contact Engineering Form"
+          >
             {/* Name Field */}
-            <div>
+            <motion.div variants={itemVariants}>
               <label htmlFor="contact-name" className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
                 Full Name <span className="text-blue-600" aria-hidden="true">*</span>
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                  <User size={16} />
+                <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${getIconColorClass('name')}`}>
+                  {touched.name && !errors.name && formData.name ? <CheckCircle size={16} /> : <User size={16} />}
                 </div>
                 <input
                   id="contact-name"
@@ -142,12 +197,9 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onClose, isModal = fal
                   aria-invalid={!!errors.name}
                   aria-describedby={errors.name ? 'contact-name-error' : undefined}
                   onChange={(e) => handleChange('name', e.target.value)}
+                  onBlur={() => handleBlur('name')}
                   placeholder="e.g. Sabit Rahman"
-                  className={`w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border-2 font-bold text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all ${
-                    errors.name 
-                      ? 'border-red-500 focus:border-red-500' 
-                      : 'border-slate-200 dark:border-slate-800 focus:border-blue-600 dark:focus:border-blue-500'
-                  }`}
+                  className={`w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border-2 font-bold text-sm placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all outline-none ${getFieldBorderClass('name')}`}
                 />
               </div>
               {errors.name && (
@@ -155,16 +207,16 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onClose, isModal = fal
                   <AlertCircle size={12} /> {errors.name}
                 </p>
               )}
-            </div>
+            </motion.div>
 
             {/* Email Field */}
-            <div>
+            <motion.div variants={itemVariants}>
               <label htmlFor="contact-email" className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
                 Email Address <span className="text-blue-600" aria-hidden="true">*</span>
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                  <Mail size={16} />
+                <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${getIconColorClass('email')}`}>
+                  {touched.email && !errors.email && formData.email ? <CheckCircle size={16} /> : <Mail size={16} />}
                 </div>
                 <input
                   id="contact-email"
@@ -175,12 +227,9 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onClose, isModal = fal
                   aria-invalid={!!errors.email}
                   aria-describedby={errors.email ? 'contact-email-error' : undefined}
                   onChange={(e) => handleChange('email', e.target.value)}
+                  onBlur={() => handleBlur('email')}
                   placeholder="name@company.com"
-                  className={`w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border-2 font-bold text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all ${
-                    errors.email 
-                      ? 'border-red-500 focus:border-red-500' 
-                      : 'border-slate-200 dark:border-slate-800 focus:border-blue-600 dark:focus:border-blue-500'
-                  }`}
+                  className={`w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border-2 font-bold text-sm placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all outline-none ${getFieldBorderClass('email')}`}
                 />
               </div>
               {errors.email && (
@@ -188,16 +237,71 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onClose, isModal = fal
                   <AlertCircle size={12} /> {errors.email}
                 </p>
               )}
-            </div>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Phone Field */}
+              <div>
+                <label htmlFor="contact-phone" className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                  Phone Number <span className="text-blue-600" aria-hidden="true">*</span>
+                </label>
+                <div className="relative">
+                  <div className={`absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none transition-colors ${getIconColorClass('phone')}`}>
+                    {touched.phone && !errors.phone && formData.phone ? <CheckCircle size={16} /> : <Phone size={16} />}
+                  </div>
+                  <input
+                    id="contact-phone"
+                    type="tel"
+                    value={formData.phone}
+                    autoComplete="tel"
+                    aria-required="true"
+                    aria-invalid={!!errors.phone}
+                    aria-describedby={errors.phone ? 'contact-phone-error' : undefined}
+                    onChange={(e) => handleChange('phone', e.target.value)}
+                    onBlur={() => handleBlur('phone')}
+                    placeholder="+1 (555) 000-0000"
+                    className={`w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border-2 font-bold text-sm placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all outline-none ${getFieldBorderClass('phone')}`}
+                  />
+                </div>
+                {errors.phone && (
+                  <p id="contact-phone-error" className="mt-1.5 text-xs font-bold text-red-500 flex items-center gap-1" role="alert">
+                    <AlertCircle size={12} /> {errors.phone}
+                  </p>
+                )}
+              </div>
+
+              {/* Inquiry Type Field */}
+              <div>
+                <label htmlFor="contact-inquiry-type" className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                  Type of Inquiry <span className="text-blue-600" aria-hidden="true">*</span>
+                </label>
+                <div className="relative">
+                  <select
+                    id="contact-inquiry-type"
+                    value={formData.inquiryType}
+                    onChange={(e) => handleChange('inquiryType', e.target.value)}
+                    className="w-full pl-4 pr-11 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 font-bold text-sm text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus:border-blue-600 dark:focus:border-blue-500 transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="Project Inquiry">Project Inquiry</option>
+                    <option value="Partnership Opportunity">Partnership Opportunity</option>
+                    <option value="Support Request">Support Request</option>
+                    <option value="General Question">General Question</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400">
+                    <ChevronDown size={16} />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
 
             {/* Message Field */}
-            <div>
+            <motion.div variants={itemVariants}>
               <label htmlFor="contact-message" className="block text-[11px] font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
                 Project Scope / Message <span className="text-blue-600" aria-hidden="true">*</span>
               </label>
               <div className="relative">
-                <div className="absolute top-3.5 left-4 pointer-events-none text-slate-400">
-                  <MessageSquare size={16} />
+                <div className={`absolute top-3.5 left-4 pointer-events-none transition-colors ${getIconColorClass('message')}`}>
+                  {touched.message && !errors.message && formData.message ? <CheckCircle size={16} /> : <MessageSquare size={16} />}
                 </div>
                 <textarea
                   id="contact-message"
@@ -207,12 +311,9 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onClose, isModal = fal
                   aria-invalid={!!errors.message}
                   aria-describedby={errors.message ? 'contact-message-error' : undefined}
                   onChange={(e) => handleChange('message', e.target.value)}
+                  onBlur={() => handleBlur('message')}
                   placeholder="Describe your inquiry or technical requirements..."
-                  className={`w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border-2 font-bold text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all resize-none ${
-                    errors.message 
-                      ? 'border-red-500 focus:border-red-500' 
-                      : 'border-slate-200 dark:border-slate-800 focus:border-blue-600 dark:focus:border-blue-500'
-                  }`}
+                  className={`w-full pl-11 pr-4 py-3.5 rounded-xl bg-slate-50 dark:bg-slate-950 border-2 font-bold text-sm placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-all resize-none outline-none ${getFieldBorderClass('message')}`}
                 />
               </div>
               {errors.message && (
@@ -220,10 +321,11 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onClose, isModal = fal
                   <AlertCircle size={12} /> {errors.message}
                 </p>
               )}
-            </div>
+            </motion.div>
 
             {/* Submit Button */}
-            <button
+            <motion.button
+              variants={itemVariants}
               type="submit"
               disabled={isSubmitting}
               className="w-full py-4 bg-slate-950 dark:bg-white text-white dark:text-slate-950 rounded-xl font-black text-xs uppercase tracking-widest hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 active:scale-[0.98] transition-all shadow-xl flex items-center justify-center gap-3 disabled:opacity-50"
@@ -235,8 +337,8 @@ export const ContactForm: React.FC<ContactFormProps> = ({ onClose, isModal = fal
                   Transmit Inquiry <Send size={15} />
                 </>
               )}
-            </button>
-          </form>
+            </motion.button>
+          </motion.form>
         )}
       </AnimatePresence>
     </div>

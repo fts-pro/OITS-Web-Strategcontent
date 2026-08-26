@@ -8,6 +8,7 @@ import {
   Filter, 
   Eye, 
   ChevronRight, 
+  ChevronDown,
   X, 
   Target, 
   Settings, 
@@ -26,8 +27,10 @@ import { motion } from 'motion/react';
 
 export const Portfolio: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<string>('All');
+  const [activeTech, setActiveTech] = useState<string>('All Tech');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
+  const [isTechDropdownOpen, setIsTechDropdownOpen] = useState(false);
 
   const categories = ['All', 'Web Development', 'Cloud Infrastructure', 'Mobile Apps'];
 
@@ -45,9 +48,15 @@ export const Portfolio: React.FC = () => {
     };
   });
 
-  const filteredProjects = activeCategory === 'All'
-    ? augmentedProjects
-    : augmentedProjects.filter(p => p.category === activeCategory);
+  // Extract unique tech stacks
+  const allTechs = Array.from(new Set(augmentedProjects.flatMap(p => p.technologies || []))).sort();
+  const techOptions = ['All Tech', ...allTechs];
+
+  const filteredProjects = augmentedProjects.filter(p => {
+    const matchCategory = activeCategory === 'All' || p.category === activeCategory;
+    const matchTech = activeTech === 'All Tech' || (p.technologies && p.technologies.includes(activeTech));
+    return matchCategory && matchTech;
+  });
 
   return (
     <>
@@ -105,20 +114,61 @@ export const Portfolio: React.FC = () => {
         </div>
 
         {/* Domain Filter Bar */}
-        <div className="flex flex-wrap items-center gap-2 mb-12 pb-4 border-b border-slate-200 dark:border-slate-800/80">
-          {categories.map((cat) => (
+        <div className="flex flex-col sm:flex-row flex-wrap items-start sm:items-center gap-4 mb-12 pb-4 border-b border-slate-200 dark:border-slate-800/80">
+          <div className="flex flex-wrap items-center gap-2">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-4 py-2 rounded-full text-xs font-mono font-bold transition-all ${
+                  activeCategory === cat
+                    ? 'bg-slate-950 dark:bg-white text-white dark:text-slate-950 shadow-md'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+
+          {/* Search by Tech Stack Dropdown */}
+          <div className="relative ml-0 sm:ml-auto">
             <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-2 rounded-full text-xs font-mono font-bold transition-all ${
-                activeCategory === cat
-                  ? 'bg-slate-950 dark:bg-white text-white dark:text-slate-950 shadow-md'
-                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800'
-              }`}
+              onClick={() => setIsTechDropdownOpen(!isTechDropdownOpen)}
+              className="px-4 py-2 rounded-full text-xs font-mono font-bold bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:border-[#38BDF8] flex items-center gap-2 transition-all"
             >
-              {cat}
+              <Filter size={14} />
+              {activeTech === 'All Tech' ? 'Search by Tech Stack' : activeTech}
+              <ChevronDown size={14} className={`transition-transform ${isTechDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
-          ))}
+
+            {isTechDropdownOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsTechDropdownOpen(false)}
+                />
+                <div className="absolute right-0 sm:right-auto sm:left-auto mt-2 w-56 max-h-64 overflow-y-auto bg-white dark:bg-[#0C1222] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 py-2 no-scrollbar">
+                  {techOptions.map((tech) => (
+                    <button
+                      key={tech}
+                      onClick={() => {
+                        setActiveTech(tech);
+                        setIsTechDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-xs font-mono transition-colors ${
+                        activeTech === tech
+                          ? 'bg-slate-100 dark:bg-slate-800 text-[#38BDF8] font-bold'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white'
+                      }`}
+                    >
+                      {tech}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Project Card Grid */}

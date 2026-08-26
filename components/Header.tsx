@@ -33,6 +33,8 @@ import { AuthModal } from './AuthModal';
 import { useTheme } from './ThemeContext';
 import { BrandLogo } from './BrandLogo';
 
+import { GlobalSearch } from './GlobalSearch';
+
 export const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -566,7 +568,8 @@ export const Header: React.FC = () => {
           </ul>
           
           {/* Header Controls Divider */}
-          <div className="ml-2 pl-3 border-l border-slate-200 dark:border-slate-800 flex items-center gap-2 xl:gap-3">
+          <div className="ml-2 pl-3 border-l border-slate-200 dark:border-slate-800 flex items-center gap-2 xl:gap-3 h-10">
+            <GlobalSearch />
             
             {/* Accessible Theme Switcher */}
             <button
