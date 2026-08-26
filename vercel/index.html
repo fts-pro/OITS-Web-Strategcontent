@@ -3783,6 +3783,7 @@
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
       import { getAuth, OAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+      import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 
       const firebaseConfig = {
         projectId: "gen-lang-client-0302885452",
@@ -3793,6 +3794,7 @@
 
       const app = initializeApp(firebaseConfig);
       const auth = getAuth(app);
+      const db = getFirestore(app);
       
       const authStatus = document.getElementById("linkedin-auth-status");
       const recommendedProjects = document.getElementById("recommended-projects");
@@ -3879,7 +3881,36 @@
             if (authBtn) authBtn.classList.add('hidden');
             if (logoutBtn) logoutBtn.classList.remove('hidden');
             
-            if (authStatus) authStatus.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400">Authenticated via LinkedIn. Profile analyzed.</span>`;
+            if (authStatus) {
+              const lastLogin = user.metadata.lastSignInTime ? new Date(user.metadata.lastSignInTime).toLocaleString() : 'Just now';
+              authStatus.innerHTML = `
+                <div class="flex flex-col gap-1 mt-1">
+                  <span class="text-emerald-600 dark:text-emerald-400">Authenticated via LinkedIn. Profile analyzed.</span>
+                  <span class="text-[9px] font-mono text-slate-400 dark:text-slate-500 flex items-center gap-1 mt-1">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                    Authentication History: Last login ${lastLogin}
+                  </span>
+                </div>
+              `;
+            }
+
+            // Detect theme and language, then save to Firestore
+            const isDark = document.documentElement.classList.contains('dark');
+            const preferredTheme = isDark ? 'dark' : 'light';
+            const language = navigator.language || 'en-US';
+            
+            setDoc(doc(db, "users", user.uid), {
+              theme: preferredTheme,
+              language: language,
+              lastLogin: user.metadata.lastSignInTime,
+              displayName: user.displayName,
+              email: user.email
+            }, { merge: true }).then(() => {
+              console.log("User preferences saved to Firestore.");
+            }).catch(err => {
+              console.error("Error saving preferences to Firestore: ", err);
+            });
+
             if (recommendedProjects) {
               const wasHidden = recommendedProjects.classList.contains('hidden');
               
