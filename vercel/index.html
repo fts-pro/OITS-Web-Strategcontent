@@ -3,6 +3,8 @@
   <head>
     <!-- html2pdf -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- canvas-confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
@@ -1402,17 +1404,51 @@
         </div>
 
         <!-- LinkedIn Personalized Blueprint Auth -->
-        <div class="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-6" id="linkedin-auth-container">
-          <div class="text-center sm:text-left">
-            <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center justify-center sm:justify-start gap-2">
-              <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
-              Sign in with LinkedIn
-            </h4>
-            <p class="text-xs text-slate-500 mt-1" id="linkedin-auth-status">Sign in to reveal personalized engineering blueprints.</p>
+        <div class="relative overflow-hidden group bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700/60 rounded-2xl p-6 transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_20px_rgba(37,99,235,0.15)] dark:hover:shadow-[0_0_15px_rgba(59,130,246,0.15)]" id="linkedin-auth-container">
+          
+          <!-- Dismissible Error Alert -->
+          <div id="linkedin-error-alert" class="hidden absolute top-3 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:w-max max-w-sm bg-red-50/95 dark:bg-red-900/90 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 px-4 py-3 rounded-xl z-30 flex justify-between items-center shadow-md backdrop-blur-sm animate-in fade-in slide-in-from-top-4 duration-300 gap-4">
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <span id="linkedin-error-text" class="text-xs font-bold font-mono"></span>
+            </div>
+            <button onclick="document.getElementById('linkedin-error-alert').classList.add('hidden')" class="text-red-700 dark:text-red-200 hover:opacity-70 transition-opacity shrink-0">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
           </div>
-          <button id="linkedin-auth-btn" class="shrink-0 px-5 py-2.5 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest rounded-xl transition-all shadow-sm focus-ring">
-            Connect with LinkedIn
-          </button>
+
+          <!-- Normal Content -->
+          <div id="linkedin-auth-normal" class="flex flex-col sm:flex-row items-center justify-between gap-6 w-full transition-all duration-500 transform translate-x-0 opacity-100 relative z-10">
+            <div class="text-center sm:text-left flex flex-col items-center sm:items-start w-full">
+              <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center justify-center sm:justify-start gap-2 w-full sm:w-auto">
+                <div id="auth-status-icon-container" class="shrink-0 flex items-center">
+                  <svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                </div>
+                <span id="linkedin-auth-title">Sign in with LinkedIn</span>
+              </h4>
+              <p class="text-xs text-slate-500 mt-2 sm:mt-1 w-full sm:w-auto" id="linkedin-auth-status">Sign in to reveal personalized engineering blueprints.</p>
+            </div>
+            <div class="flex items-center gap-3 w-full sm:w-auto shrink-0">
+              <button id="linkedin-auth-btn" class="w-full sm:w-auto px-6 py-3 bg-[#0A66C2] hover:bg-[#004182] text-white text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest rounded-xl transition-all shadow-sm focus-ring">
+                Connect with LinkedIn
+              </button>
+              <button id="linkedin-logout-btn" class="hidden w-full sm:w-auto px-6 py-3 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 text-[10px] sm:text-xs font-mono font-bold uppercase tracking-widest rounded-xl transition-all shadow-sm focus-ring">
+                Log Out
+              </button>
+            </div>
+          </div>
+
+          <!-- Loading Skeleton (Hidden by default) -->
+          <div id="linkedin-auth-skeleton" class="hidden absolute inset-0 bg-blue-50/95 dark:bg-slate-900/95 flex-col sm:flex-row items-center justify-between gap-6 px-6 py-4 z-20 backdrop-blur-sm">
+            <div class="flex items-center justify-center sm:justify-start gap-4 w-full">
+              <div class="w-8 h-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin shrink-0"></div>
+              <div class="flex flex-col gap-2 w-full max-w-[200px]">
+                <div class="h-2.5 bg-blue-200 dark:bg-blue-800/50 rounded-full animate-pulse w-full"></div>
+                <div class="h-2 bg-blue-200 dark:bg-blue-800/50 rounded-full animate-pulse w-2/3"></div>
+              </div>
+            </div>
+            <div class="h-10 w-full sm:w-40 bg-blue-200 dark:bg-blue-800/50 rounded-xl animate-pulse shrink-0"></div>
+          </div>
         </div>
         <div id="recommended-projects" class="hidden flex-col gap-4 w-full"></div>
 
@@ -3761,52 +3797,153 @@
       const authStatus = document.getElementById("linkedin-auth-status");
       const recommendedProjects = document.getElementById("recommended-projects");
       const authBtn = document.getElementById("linkedin-auth-btn");
+      const logoutBtn = document.getElementById("linkedin-logout-btn");
+      const normalContent = document.getElementById('linkedin-auth-normal');
+      const skeletonLoader = document.getElementById('linkedin-auth-skeleton');
+      const authContainer = document.getElementById("linkedin-auth-container");
+      const authIconContainer = document.getElementById("auth-status-icon-container");
+      const authTitle = document.getElementById("linkedin-auth-title");
+      const errorAlert = document.getElementById("linkedin-error-alert");
+      const errorText = document.getElementById("linkedin-error-text");
+
+      // Attach blueprint download logic
+      window.downloadBlueprint = function() {
+        const element = document.getElementById('blueprint-content-area');
+        if (element && typeof html2pdf !== 'undefined') {
+          html2pdf().set({
+            margin: 0.5,
+            filename: 'OITS_Engineering_Blueprint.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+          }).from(element).save();
+        } else {
+          alert('PDF generation library is still loading. Please try again in a moment.');
+        }
+      };
 
       if (authBtn) {
         authBtn.addEventListener("click", async () => {
-          if (auth.currentUser) {
-            await signOut(auth);
-          } else {
-            const provider = new OAuthProvider('linkedin.com');
-            try {
-              authBtn.innerHTML = `<span class="animate-pulse">Authenticating...</span>`;
-              await signInWithPopup(auth, provider);
-            } catch (error) {
-              console.error(error);
-              alert("LinkedIn Authentication requires App Credentials in Firebase Console.\\n\\nError: " + error.message);
-              authBtn.innerHTML = `Connect with LinkedIn`;
+          const provider = new OAuthProvider('linkedin.com');
+          try {
+            if (errorAlert) errorAlert.classList.add('hidden');
+            if (normalContent && skeletonLoader) {
+              normalContent.classList.add('opacity-0', '-translate-x-4');
+              skeletonLoader.classList.remove('hidden');
+              skeletonLoader.classList.add('flex');
+            }
+            await signInWithPopup(auth, provider);
+          } catch (error) {
+            console.error(error);
+            if (errorText && errorAlert) {
+              errorText.innerText = error.message.replace('Firebase: ', '');
+              errorAlert.classList.remove('hidden');
+            }
+            if (normalContent && skeletonLoader) {
+              normalContent.classList.remove('opacity-0', '-translate-x-4');
+              skeletonLoader.classList.add('hidden');
+              skeletonLoader.classList.remove('flex');
             }
           }
         });
       }
 
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+          if (normalContent) {
+             normalContent.classList.add('opacity-0', 'translate-x-4');
+          }
+          await signOut(auth);
+        });
+      }
+
       onAuthStateChanged(auth, (user) => {
-        if (user) {
-          if (authBtn) authBtn.innerHTML = `Disconnect ${user.displayName || 'LinkedIn'}`;
-          if (authStatus) authStatus.innerHTML = `<span class="text-green-600 dark:text-green-400">Authenticated via LinkedIn. Profile analyzed.</span>`;
-          if (recommendedProjects) {
-            recommendedProjects.classList.remove('hidden');
-            recommendedProjects.classList.add('flex');
-            recommendedProjects.innerHTML = \`
-              <div class="p-6 rounded-2xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/50 w-full animate-fade-in text-left">
-                 <h4 class="text-sm font-bold text-blue-800 dark:text-blue-300 mb-2">Recommended for your profile</h4>
-                 <p class="text-xs text-blue-600 dark:text-blue-400 mb-4">Based on your professional background, these architectures fit your industry:</p>
-                 <ul class="space-y-2 text-xs font-mono text-slate-700 dark:text-slate-300">
-                   <li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div> FinTech Scalable Ledger (Go/PostgreSQL)</li>
-                   <li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div> AI-Driven B2B Sales Dashboard (React/Next.js)</li>
-                 </ul>
-              </div>
-            \`;
-          }
-        } else {
-          if (authBtn) authBtn.innerHTML = \`Connect with LinkedIn\`;
-          if (authStatus) authStatus.innerHTML = \`Sign in to reveal personalized engineering blueprints.\`;
-          if (recommendedProjects) {
-            recommendedProjects.classList.add('hidden');
-            recommendedProjects.classList.remove('flex');
-            recommendedProjects.innerHTML = '';
-          }
+        if (normalContent) {
+           normalContent.classList.add('opacity-0');
         }
+        
+        setTimeout(() => {
+          if (normalContent && skeletonLoader) {
+            skeletonLoader.classList.add('hidden');
+            skeletonLoader.classList.remove('flex');
+          }
+          
+          if (user) {
+            if (authContainer) {
+              authContainer.classList.remove('animate-[pulse_3s_ease-in-out_infinite]');
+            }
+            if (authIconContainer) {
+              authIconContainer.innerHTML = `<svg class="w-4 h-4 text-emerald-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>`;
+            }
+            if (authTitle) authTitle.innerHTML = `Welcome Back, ${user.displayName || 'Engineer'}`;
+            if (authBtn) authBtn.classList.add('hidden');
+            if (logoutBtn) logoutBtn.classList.remove('hidden');
+            
+            if (authStatus) authStatus.innerHTML = `<span class="text-emerald-600 dark:text-emerald-400">Authenticated via LinkedIn. Profile analyzed.</span>`;
+            if (recommendedProjects) {
+              const wasHidden = recommendedProjects.classList.contains('hidden');
+              
+              recommendedProjects.classList.remove('hidden');
+              recommendedProjects.classList.add('flex');
+              recommendedProjects.innerHTML = \`
+                <div id="blueprint-content-area" class="p-6 rounded-2xl bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/50 w-full animate-fade-in text-left">
+                   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                     <div>
+                       <h4 class="text-sm font-bold text-blue-800 dark:text-blue-300 mb-1">Recommended for your profile</h4>
+                       <p class="text-xs text-blue-600 dark:text-blue-400">Based on your professional background, these architectures fit your industry:</p>
+                     </div>
+                     <button onclick="downloadBlueprint()" class="shrink-0 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-mono font-bold uppercase tracking-widest rounded-lg transition-colors shadow-sm focus-ring">
+                       <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                       Save PDF
+                     </button>
+                   </div>
+                   <ul class="space-y-2 text-xs font-mono text-slate-700 dark:text-slate-300">
+                     <li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div> FinTech Scalable Ledger (Go/PostgreSQL)</li>
+                     <li class="flex items-center gap-2"><div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div> AI-Driven B2B Sales Dashboard (React/Next.js)</li>
+                   </ul>
+                </div>
+              \`;
+
+              if (wasHidden) {
+                if (typeof confetti === 'function') {
+                  confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 },
+                    colors: ['#0A66C2', '#38BDF8', '#10B981']
+                  });
+                }
+                setTimeout(() => {
+                  recommendedProjects.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 500);
+              }
+            }
+          } else {
+            if (authContainer) {
+              authContainer.classList.add('animate-[pulse_3s_ease-in-out_infinite]');
+            }
+            if (authIconContainer) {
+              authIconContainer.innerHTML = `<svg class="w-4 h-4 text-blue-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>`;
+            }
+            if (authTitle) authTitle.innerHTML = \`Sign in with LinkedIn\`;
+            if (authBtn) authBtn.classList.remove('hidden');
+            if (logoutBtn) logoutBtn.classList.add('hidden');
+            if (authStatus) authStatus.innerHTML = \`Sign in to reveal personalized engineering blueprints.\`;
+            if (recommendedProjects) {
+              recommendedProjects.classList.add('hidden');
+              recommendedProjects.classList.remove('flex');
+              recommendedProjects.innerHTML = '';
+            }
+          }
+          
+          if (normalContent) {
+            // Slight delay to ensure DOM updates before sliding back in
+            setTimeout(() => {
+              normalContent.classList.remove('opacity-0', '-translate-x-4', 'translate-x-4');
+              normalContent.classList.add('translate-x-0');
+            }, 50);
+          }
+        }, 300);
       });
     </script>
   </body>
