@@ -92,23 +92,51 @@ export const MiniGlobe: React.FC = () => {
 
       const container = am5.Container.new(root, {});
 
-      // HTML Marker with CSS keyframes pulsing
-      const markerLabel = am5.Label.new(root, {
-        html: `
-          <div class="globe-marker-container" style="width: ${isHq ? 20 : 14}px; height: ${isHq ? 20 : 14}px;">
-            <div class="globe-marker-pulse ${isHq ? 'hq' : ''}"></div>
-            <div class="globe-marker-core ${isHq ? 'hq' : ''}" style="width: ${isHq ? 11 : 7}px; height: ${isHq ? 11 : 7}px;"></div>
-          </div>
-        `,
-        centerX: am5.p50,
-        centerY: am5.p50
-      });
-      container.children.push(markerLabel);
+      // Outer Pulsing Circle (Canvas)
+      const pulseCircle = container.children.push(
+        am5.Circle.new(root, {
+          radius: isHq ? 10 : 7,
+          fill: am5.color(isHq ? 0x2563eb : 0x38bdf8),
+          fillOpacity: 0.35,
+          shadowColor: am5.color(isHq ? 0x2563eb : 0x38bdf8),
+          shadowBlur: 10
+        })
+      );
 
-      // Sectioned Tooltip Card
+      pulseCircle.animate({
+        key: "scale",
+        from: 1,
+        to: 2.2,
+        duration: 1500,
+        loops: Infinity,
+        easing: am5.ease.out(am5.ease.cubic)
+      });
+
+      pulseCircle.animate({
+        key: "fillOpacity",
+        from: 0.5,
+        to: 0,
+        duration: 1500,
+        loops: Infinity,
+        easing: am5.ease.out(am5.ease.cubic)
+      });
+
+      // Core Solid Point (Canvas)
+      container.children.push(
+        am5.Circle.new(root, {
+          radius: isHq ? 5.5 : 3.5,
+          fill: am5.color(isHq ? 0x2563eb : 0x3b82f6),
+          stroke: am5.color(0xffffff),
+          strokeWidth: 1.5,
+          shadowColor: am5.color(0x3b82f6),
+          shadowBlur: 6
+        })
+      );
+
+      // Sectioned Tooltip Card (Native auto-hiding behavior)
       const cardLabel = am5.Label.new(root, {
         html: `
-          <div class="globe-tooltip-card pointer-events-none bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-1.5 sm:p-2 rounded-lg shadow-xl flex flex-col gap-0.5 min-w-[120px]" data-lon="${data?.longitude ?? 0}">
+          <div class="pointer-events-none bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-1.5 sm:p-2 rounded-lg shadow-xl flex flex-col gap-0.5 transform -translate-x-1/2 -translate-y-full mb-2 min-w-[120px] z-50">
             <div class="text-[8px] font-mono font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
               ${data?.title}
             </div>
@@ -134,11 +162,10 @@ export const MiniGlobe: React.FC = () => {
     // Populate City Points
     cities.forEach(city => {
       pointSeries.pushDataItem({
-        latitude: city.latitude,
-        longitude: city.longitude,
+        geometry: { type: 'Point', coordinates: [city.longitude, city.latitude] },
         title: city.title,
         isHq: city.isHq
-      });
+      } as any);
     });
 
     // Arc Line Data Connections from Dhaka HQ to other nodes
@@ -178,22 +205,10 @@ export const MiniGlobe: React.FC = () => {
       easing: am5.ease.linear
     });
 
-    // Track Rotation Angle for Slider Synchronization and JS Visibility Observer
+    // Track Rotation Angle for persistent rotation
     chart.events.on('boundschanged', () => {
       const rot = chart.get('rotationX', 0);
       localStorage.setItem('globe_rotationX', rot.toString());
-
-      // JS Observer: toggle visibility of tooltip cards based on rotation state
-      const tooltips = document.querySelectorAll('.globe-tooltip-card');
-      tooltips.forEach((tooltip) => {
-        const lon = parseFloat(tooltip.getAttribute('data-lon') || '0');
-        const isFront = Math.cos((lon + rot) * Math.PI / 180) > 0;
-        if (isFront) {
-          tooltip.classList.add('visible');
-        } else {
-          tooltip.classList.remove('visible');
-        }
-      });
     });
 
     // On user drag, pause auto-rotation briefly

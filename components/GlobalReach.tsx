@@ -109,7 +109,7 @@ export const NODE_SPECS: Record<string, NodeSpec> = {
   }
 };
 
-const CLIENT_LOCATIONS: ClientLocation[] = [
+export const CLIENT_LOCATIONS: ClientLocation[] = [
   {
     id: 'dhaka',
     city: 'Dhaka',
@@ -202,6 +202,13 @@ export const GlobalReach: React.FC = () => {
   const [hoveredLocation, setHoveredLocation] = useState<ClientLocation | null>(null);
   const [rotationX, setRotationX] = useState<number>(0);
   const [isSpinning, setIsSpinning] = useState<boolean>(true);
+  const isSpinningRef = useRef<boolean>(true);
+  const [isInViewport, setIsInViewport] = useState(false);
+  
+  const setSpinState = (val: boolean) => {
+    setSpinState(val);
+    isSpinningRef.current = val;
+  };
   
   // Real-time Spec panel and dynamic status cycling states
   const [isSpecOpen, setIsSpecOpen] = useState<boolean>(false);
@@ -269,6 +276,20 @@ export const GlobalReach: React.FC = () => {
 
   // Keep these handlers current to avoid amCharts capturing stale closures
   useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setIsInViewport(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (chartDivRef.current) observer.observe(chartDivRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     pinClickRef.current = (location: ClientLocation) => {
       setSelectedLocation(location);
       if (chartRef.current) {
@@ -276,7 +297,7 @@ export const GlobalReach: React.FC = () => {
           spinRef.current.stop();
           spinRef.current = null;
         }
-        setIsSpinning(false);
+        setSpinState(false);
         chartRef.current.animate({
           key: 'rotationX',
           to: -location.longitude,
@@ -294,14 +315,37 @@ export const GlobalReach: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const handleGlobeZoom = (e: Event) => {
+      const customEvent = e as CustomEvent<ClientLocation>;
+      if (customEvent.detail) {
+        pinClickRef.current(customEvent.detail);
+      }
+    };
+    window.addEventListener('globe-zoom-to', handleGlobeZoom);
+    return () => window.removeEventListener('globe-zoom-to', handleGlobeZoom);
+  }, []);
+
+  useEffect(() => {
     pinHoverRef.current = (location: ClientLocation) => {
       setHoveredLocation(location);
+      if (chartRef.current && isSpinningRef.current) {
+        if (spinRef.current) spinRef.current.stop();
+        const rot = chartRef.current.get('rotationX', 0);
+        spinRef.current = chartRef.current.animate({
+          key: 'rotationX',
+          from: rot,
+          to: rot + 360,
+          duration: 150000,
+          loops: Infinity,
+          easing: am5.ease.linear
+        });
+      }
     };
   }, []);
 
   // Initialize amCharts 5 Globe
   useEffect(() => {
-    if (!chartDivRef.current) return;
+    if (!isInViewport || !chartDivRef.current) return;
 
     // Initialize amCharts 5 Root element
     const root = am5.Root.new(chartDivRef.current);
@@ -382,23 +426,51 @@ export const GlobalReach: React.FC = () => {
 
       const container = am5.Container.new(bulletRoot, { cursorOverStyle: 'pointer' });
 
-      // HTML Marker with CSS keyframes pulsing
-      const markerLabel = am5.Label.new(bulletRoot, {
-        html: `
-          <div class="globe-marker-container" style="width: ${isHq ? 28 : 18}px; height: ${isHq ? 28 : 18}px;">
-            <div class="globe-marker-pulse ${isHq ? 'hq' : ''}"></div>
-            <div class="globe-marker-core ${isHq ? 'hq' : ''}"></div>
-          </div>
-        `,
-        centerX: am5.p50,
-        centerY: am5.p50
-      });
-      container.children.push(markerLabel);
+      // Outer Pulse Ring Bullet (Canvas)
+      const pulseCircle = container.children.push(
+        am5.Circle.new(bulletRoot, {
+          radius: isHq ? 14 : 9,
+          fill: am5.color(isHq ? 0x2563eb : 0x38bdf8),
+          fillOpacity: 0.35,
+          shadowColor: am5.color(isHq ? 0x2563eb : 0x38bdf8),
+          shadowBlur: 14
+        })
+      );
 
-      // Sectioned Tooltip Card (Appears when in front, auto-hides when behind)
+      pulseCircle.animate({
+        key: "scale",
+        from: 1,
+        to: 2.2,
+        duration: 1500,
+        loops: Infinity,
+        easing: am5.ease.out(am5.ease.cubic)
+      });
+
+      pulseCircle.animate({
+        key: "fillOpacity",
+        from: 0.5,
+        to: 0,
+        duration: 1500,
+        loops: Infinity,
+        easing: am5.ease.out(am5.ease.cubic)
+      });
+
+      // Inner Core Bullet Node (Canvas)
+      container.children.push(
+        am5.Circle.new(bulletRoot, {
+          radius: isHq ? 7 : 4.5,
+          fill: am5.color(isHq ? 0x2563eb : 0x3b82f6),
+          stroke: am5.color(0xffffff),
+          strokeWidth: 1.5,
+          shadowColor: am5.color(0x3b82f6),
+          shadowBlur: 8
+        })
+      );
+
+      // Sectioned Tooltip Card (Native auto-hides when behind)
       const cardLabel = am5.Label.new(bulletRoot, {
         html: `
-          <div class="globe-tooltip-card pointer-events-none bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-xl flex flex-col gap-1 min-w-[160px]" data-lon="${data?.longitude ?? 0}">
+          <div class="pointer-events-none bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-3 rounded-xl shadow-xl flex flex-col gap-1 transform -translate-x-1/2 -translate-y-full mb-3 min-w-[160px] z-50">
             <div class="text-[9px] font-mono font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
               ${data?.city ?? ''} (${data?.country ?? ''})
             </div>
@@ -418,7 +490,21 @@ export const GlobalReach: React.FC = () => {
 
       container.events.on('click', () => { if (data) pinClickRef.current(data); });
       container.events.on('pointerover', () => { if (data) pinHoverRef.current(data); });
-      container.events.on('pointerout', () => { setHoveredLocation(null); });
+      container.events.on('pointerout', () => { 
+        setHoveredLocation(null); 
+        if (chartRef.current && isSpinningRef.current) {
+          if (spinRef.current) spinRef.current.stop();
+          const rot = chartRef.current.get('rotationX', 0);
+          spinRef.current = chartRef.current.animate({
+            key: 'rotationX',
+            from: rot,
+            to: rot + 360,
+            duration: 30000,
+            loops: Infinity,
+            easing: am5.ease.linear
+          });
+        }
+      });
 
       return am5.Bullet.new(bulletRoot, { sprite: container });
     });
@@ -437,23 +523,11 @@ export const GlobalReach: React.FC = () => {
     });
     spinRef.current = spin;
 
-    // Track Rotation Angle for Slider Synchronization and JS Visibility Observer
+    // Track Rotation Angle for persistent rotation
     chart.events.on('boundschanged', () => {
       const rot = chart.get('rotationX', 0);
       setRotationX(Math.round(((rot % 360) + 360) % 360 - 180));
       localStorage.setItem('globe_rotationX', rot.toString());
-
-      // JS Observer: toggle visibility of tooltip cards based on rotation state
-      const tooltips = document.querySelectorAll('.globe-tooltip-card');
-      tooltips.forEach((tooltip) => {
-        const lon = parseFloat(tooltip.getAttribute('data-lon') || '0');
-        const isFront = Math.cos((lon + rot) * Math.PI / 180) > 0;
-        if (isFront) {
-          tooltip.classList.add('visible');
-        } else {
-          tooltip.classList.remove('visible');
-        }
-      });
     });
 
     // Pause spin rotation on map interaction
@@ -462,7 +536,7 @@ export const GlobalReach: React.FC = () => {
         spinRef.current.stop();
         spinRef.current = null;
       }
-      setIsSpinning(false);
+      setSpinState(false);
     });
 
     // Clean Disposal on Component Unmount
@@ -480,7 +554,7 @@ export const GlobalReach: React.FC = () => {
         spinRef.current.stop();
         spinRef.current = null;
       }
-      setIsSpinning(false);
+      setSpinState(false);
       chartRef.current.set('rotationX', val);
     }
   };
@@ -493,7 +567,7 @@ export const GlobalReach: React.FC = () => {
         spinRef.current.stop();
         spinRef.current = null;
       }
-      setIsSpinning(false);
+      setSpinState(false);
     } else {
       const currentRot = chartRef.current.get('rotationX', 0);
       spinRef.current = chartRef.current.animate({
@@ -504,7 +578,7 @@ export const GlobalReach: React.FC = () => {
         loops: Infinity,
         easing: am5.ease.linear
       });
-      setIsSpinning(true);
+      setSpinState(true);
     }
   };
 
@@ -529,7 +603,7 @@ export const GlobalReach: React.FC = () => {
         loops: Infinity,
         easing: am5.ease.linear
       });
-      setIsSpinning(true);
+      setSpinState(true);
     }
   };
 
@@ -626,6 +700,43 @@ export const GlobalReach: React.FC = () => {
                 id="chartdiv" 
                 className="w-full h-full min-h-[420px] sm:min-h-[480px] md:min-h-[520px] relative drop-shadow-[0_0_24px_rgba(37,99,235,0.04)]" 
               />
+              
+              {/* Legend Overlay */}
+              <div className="absolute bottom-6 left-4 flex flex-col gap-2 p-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm z-10 pointer-events-none">
+                <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-700 pb-1 mb-1">
+                  Node Types
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex items-center justify-center w-4 h-4">
+                    <div className="absolute inset-0 bg-blue-600 opacity-20 rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 rounded-full bg-blue-600 border border-white shadow-sm"></div>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300">HQ (Dhaka)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative flex items-center justify-center w-4 h-4">
+                    <div className="absolute inset-0 bg-sky-400 opacity-20 rounded-full animate-pulse"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-sky-400 border border-white shadow-sm"></div>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300">Client Node</span>
+                </div>
+                
+                <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest border-b border-slate-200 dark:border-slate-700 pb-1 mt-2 mb-1">
+                  System Status
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+                  <span className="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300">Online</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]"></div>
+                  <span className="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300">Syncing</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]"></div>
+                  <span className="text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300">Degraded</span>
+                </div>
+              </div>
             </div>
 
             {/* Bottom Horizontal Rotation Slider */}

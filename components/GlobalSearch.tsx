@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Mic, X, Clock, MicOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { CLIENT_LOCATIONS } from './GlobalReach';
 
 export const GlobalSearch: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -42,8 +43,25 @@ export const GlobalSearch: React.FC = () => {
     setIsOpen(false);
     setQuery('');
     
-    // Simple routing to a page where search could apply, like portfolio
-    navigate(`/portfolio?search=${encodeURIComponent(searchTerm)}`);
+    const matchedLocation = CLIENT_LOCATIONS.find(
+      loc => 
+        loc.city.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        loc.clientName.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (matchedLocation) {
+      navigate('/#global-reach');
+      setTimeout(() => {
+        const globeElement = document.getElementById('global-reach');
+        if (globeElement) {
+          globeElement.scrollIntoView({ behavior: 'smooth' });
+          window.dispatchEvent(new CustomEvent('globe-zoom-to', { detail: matchedLocation }));
+        }
+      }, 300);
+    } else {
+      // Simple routing to a page where search could apply, like portfolio
+      navigate(`/portfolio?search=${encodeURIComponent(searchTerm)}`);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
