@@ -147,7 +147,7 @@ export const ServiceModal: React.FC<ServiceModalProps> = ({ service, isOpen, onC
                       }}
                       className="w-full md:w-auto px-8 py-4 bg-slate-950 dark:bg-white text-white dark:text-slate-950 text-xs font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-all shadow-xl shadow-slate-900/20"
                     >
-                      Learn More & Get a Quote
+                      Learn More
                     </button>
                   </div>
                 </div>
