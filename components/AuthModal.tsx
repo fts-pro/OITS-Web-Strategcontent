@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Mail, Lock, User, ArrowRight, Github, Linkedin, Eye } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, query, limit } from 'firebase/firestore';
-import { db } from '../utils/firebase';
+import { collection, getDocs, query, limit, doc, getDoc } from 'firebase/firestore';
+import { db, auth } from '../utils/firebase';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -22,6 +22,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
       // Fetch dynamic benefits/blueprints from Firestore
       const fetchBlueprints = async () => {
         try {
+          const user = auth.currentUser;
+          if (user) {
+            const userDocRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists() && userDoc.data().industry_blueprints) {
+              setBlueprints(userDoc.data().industry_blueprints);
+              return;
+            }
+          }
+          
           const q = query(collection(db, 'industry_blueprints'), limit(2));
           const querySnapshot = await getDocs(q);
           const fetched: string[] = [];
