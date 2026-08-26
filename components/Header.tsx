@@ -295,11 +295,11 @@ export const Header: React.FC = () => {
         </div>
 
         {/* Desktop Nav */}
-        <nav className="hidden sm:flex items-center gap-1 xl:gap-2 ml-auto mr-4" aria-label="Main site navigation">
-          <ul className="flex items-center gap-1.5" role="list">
+        <nav className="hidden sm:flex items-center gap-1 xl:gap-2 ml-auto mr-4 h-full" aria-label="Main site navigation">
+          <ul className="flex items-center gap-1.5 h-full" role="list">
             
             {/* Home Link (Icon Only) */}
-            <li>
+            <li className="h-full flex items-center">
               <Link 
                 to="/"
                 onClick={(e) => {
@@ -321,7 +321,7 @@ export const Header: React.FC = () => {
 
             {/* Services with Dropdown Trigger */}
             <li 
-              className="relative" 
+              className="h-full flex items-center" 
               ref={servicesDropdownRef}
               onMouseEnter={() => {
                 setIsServicesOpen(true);
@@ -348,46 +348,48 @@ export const Header: React.FC = () => {
 
               {/* Categorized Multi-Column Services Dropdown */}
               {isServicesOpen && (
-                <div
-                  id="services-dropdown-panel"
-                  className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[680px] p-6 bg-white/95 dark:bg-[#0A0F1D]/95 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl shadow-black/20 animate-in fade-in-0 zoom-in-95 duration-200 z-50 grid grid-cols-3 gap-6"
-                  role="region"
-                  aria-label="Services Directory"
-                >
-                  {serviceCategories.map((cat, idx) => (
-                    <div key={idx} className="space-y-3">
-                      <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800/80 text-xs font-mono font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100">
-                        {cat.icon}
-                        <span>{cat.title}</span>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 w-[85vw] sm:w-[450px] lg:w-[680px] max-w-[calc(100vw-2rem)] z-50">
+                  <div
+                    id="services-dropdown-panel"
+                    className="w-full p-6 bg-white/95 dark:bg-[#0A0F1D]/95 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl shadow-black/20 animate-in fade-in-0 zoom-in-95 duration-200 grid grid-cols-2 lg:grid-cols-3 gap-6"
+                    role="region"
+                    aria-label="Services Directory"
+                  >
+                    {serviceCategories.map((cat, idx) => (
+                      <div key={idx} className="space-y-3">
+                        <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800/80 text-xs font-mono font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100">
+                          {cat.icon}
+                          <span>{cat.title}</span>
+                        </div>
+                        <div className="space-y-2">
+                          {cat.items.map((item) => (
+                            <button
+                              key={item.id}
+                              onClick={() => handleServiceClick(item.id)}
+                              className="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors group/item block"
+                            >
+                              <p className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover/item:text-[#38BDF8] transition-colors">
+                                {item.name}
+                              </p>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 font-normal">
+                                {item.desc}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        {cat.items.map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => handleServiceClick(item.id)}
-                            className="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors group/item block"
-                          >
-                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover/item:text-[#38BDF8] transition-colors">
-                              {item.name}
-                            </p>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 font-normal">
-                              {item.desc}
-                            </p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
 
-                  <div className="col-span-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-mono">Custom enterprise specs available</span>
-                    <Link
-                      to="/services"
-                      onClick={(e) => handleNavClick(e as any, '/services')}
-                      className="text-[#38BDF8] hover:underline font-bold flex items-center gap-1"
-                    >
-                      View all capabilities <ChevronRight size={14} />
-                    </Link>
+                    <div className="col-span-2 lg:col-span-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-mono">Custom enterprise specs available</span>
+                      <Link
+                        to="/services"
+                        onClick={(e) => handleNavClick(e as any, '/services')}
+                        className="text-[#38BDF8] hover:underline font-bold flex items-center gap-1"
+                      >
+                        View all capabilities <ChevronRight size={14} />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               )}
@@ -395,7 +397,7 @@ export const Header: React.FC = () => {
 
             {/* Portfolio with Dropdown Trigger */}
             <li 
-              className="relative" 
+              className="h-full flex items-center" 
               ref={portfolioDropdownRef}
               onMouseEnter={() => {
                 setIsPortfolioOpen(true);
@@ -422,46 +424,48 @@ export const Header: React.FC = () => {
 
               {/* Categorized Multi-Column Portfolio Dropdown */}
               {isPortfolioOpen && (
-                <div
-                  id="portfolio-dropdown-panel"
-                  className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[680px] p-6 bg-white/95 dark:bg-[#0A0F1D]/95 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl shadow-black/20 animate-in fade-in-0 zoom-in-95 duration-200 z-50 grid grid-cols-3 gap-6"
-                  role="region"
-                  aria-label="Portfolio Domains Directory"
-                >
-                  {portfolioCategories.map((cat, idx) => (
-                    <div key={idx} className="space-y-3">
-                      <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800/80 text-xs font-mono font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100">
-                        {cat.icon}
-                        <span>{cat.title}</span>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 w-[85vw] sm:w-[450px] lg:w-[680px] max-w-[calc(100vw-2rem)] z-50">
+                  <div
+                    id="portfolio-dropdown-panel"
+                    className="w-full p-6 bg-white/95 dark:bg-[#0A0F1D]/95 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl shadow-black/20 animate-in fade-in-0 zoom-in-95 duration-200 grid grid-cols-2 lg:grid-cols-3 gap-6"
+                    role="region"
+                    aria-label="Portfolio Domains Directory"
+                  >
+                    {portfolioCategories.map((cat, idx) => (
+                      <div key={idx} className="space-y-3">
+                        <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800/80 text-xs font-mono font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100">
+                          {cat.icon}
+                          <span>{cat.title}</span>
+                        </div>
+                        <div className="space-y-2">
+                          {cat.items.map((item) => (
+                            <button
+                              key={item.id}
+                              onClick={() => handlePortfolioClick(item.id)}
+                              className="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors group/item block"
+                            >
+                              <p className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover/item:text-[#38BDF8] transition-colors">
+                                {item.name}
+                              </p>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 font-normal">
+                                {item.desc}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        {cat.items.map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => handlePortfolioClick(item.id)}
-                            className="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors group/item block"
-                          >
-                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover/item:text-[#38BDF8] transition-colors">
-                              {item.name}
-                            </p>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 font-normal">
-                              {item.desc}
-                            </p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
 
-                  <div className="col-span-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-mono">Enterprise case studies & metrics</span>
-                    <Link
-                      to="/portfolio"
-                      onClick={(e) => handleNavClick(e as any, '/portfolio')}
-                      className="text-[#38BDF8] hover:underline font-bold flex items-center gap-1"
-                    >
-                      View all case studies <ChevronRight size={14} />
-                    </Link>
+                    <div className="col-span-2 lg:col-span-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-mono">Enterprise case studies & metrics</span>
+                      <Link
+                        to="/portfolio"
+                        onClick={(e) => handleNavClick(e as any, '/portfolio')}
+                        className="text-[#38BDF8] hover:underline font-bold flex items-center gap-1"
+                      >
+                        View all case studies <ChevronRight size={14} />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               )}
@@ -469,7 +473,7 @@ export const Header: React.FC = () => {
 
             {/* About Us with Dropdown Trigger */}
             <li 
-              className="relative" 
+              className="h-full flex items-center" 
               ref={aboutDropdownRef}
               onMouseEnter={() => {
                 setIsAboutOpen(true);
@@ -496,53 +500,55 @@ export const Header: React.FC = () => {
 
               {/* Categorized Multi-Column About Us Dropdown */}
               {isAboutOpen && (
-                <div
-                  id="about-dropdown-panel"
-                  className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-[680px] p-6 bg-white/95 dark:bg-[#0A0F1D]/95 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl shadow-black/20 animate-in fade-in-0 zoom-in-95 duration-200 z-50 grid grid-cols-3 gap-6"
-                  role="region"
-                  aria-label="About Us Directory"
-                >
-                  {aboutCategories.map((cat, idx) => (
-                    <div key={idx} className="space-y-3">
-                      <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800/80 text-xs font-mono font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100">
-                        {cat.icon}
-                        <span>{cat.title}</span>
+                <div className="absolute top-full left-1/2 -translate-x-1/2 pt-4 w-[85vw] sm:w-[450px] lg:w-[680px] max-w-[calc(100vw-2rem)] z-50">
+                  <div
+                    id="about-dropdown-panel"
+                    className="w-full p-6 bg-white/95 dark:bg-[#0A0F1D]/95 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl shadow-black/20 animate-in fade-in-0 zoom-in-95 duration-200 grid grid-cols-2 lg:grid-cols-3 gap-6"
+                    role="region"
+                    aria-label="About Us Directory"
+                  >
+                    {aboutCategories.map((cat, idx) => (
+                      <div key={idx} className="space-y-3">
+                        <div className="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800/80 text-xs font-mono font-bold uppercase tracking-wider text-slate-900 dark:text-slate-100">
+                          {cat.icon}
+                          <span>{cat.title}</span>
+                        </div>
+                        <div className="space-y-2">
+                          {cat.items.map((item) => (
+                            <button
+                              key={item.id}
+                              onClick={() => handleAboutClick(item.id)}
+                              className="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors group/item block"
+                            >
+                              <p className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover/item:text-[#38BDF8] transition-colors">
+                                {item.name}
+                              </p>
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 font-normal">
+                                {item.desc}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <div className="space-y-2">
-                        {cat.items.map((item) => (
-                          <button
-                            key={item.id}
-                            onClick={() => handleAboutClick(item.id)}
-                            className="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-colors group/item block"
-                          >
-                            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover/item:text-[#38BDF8] transition-colors">
-                              {item.name}
-                            </p>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5 font-normal">
-                              {item.desc}
-                            </p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
 
-                  <div className="col-span-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-mono">Our engineering history & culture</span>
-                    <Link
-                      to="/about"
-                      onClick={(e) => handleNavClick(e as any, '/about')}
-                      className="text-[#38BDF8] hover:underline font-bold flex items-center gap-1"
-                    >
-                      Explore About Us <ChevronRight size={14} />
-                    </Link>
+                    <div className="col-span-2 lg:col-span-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+                      <span className="text-slate-500 font-mono">Our engineering history & culture</span>
+                      <Link
+                        to="/about"
+                        onClick={(e) => handleNavClick(e as any, '/about')}
+                        className="text-[#38BDF8] hover:underline font-bold flex items-center gap-1"
+                      >
+                        Explore About Us <ChevronRight size={14} />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               )}
             </li>
 
             {/* Contact (Icon Only) */}
-            <li>
+            <li className="h-full flex items-center">
               <Link 
                 to="/contact"
                 onClick={(e) => handleNavClick(e as any, '/contact')}
